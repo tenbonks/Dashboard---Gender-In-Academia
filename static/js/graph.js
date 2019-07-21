@@ -7,7 +7,7 @@ function makeGraphs(error, salaryData) {
     
     salaryData.forEach(function(d){
         d.salary = parseInt(d.salary);
-        d.yrs_service = parseInt(d["yrs_service"])
+        d.yrs_service = parseInt(d["yrs.service"])
     });
     
     show_discipline_selector(ndx);
@@ -213,10 +213,10 @@ function show_service_to_salary_correlation(ndx) {
         .clipPadding(10)                                                                //Leaves room at the top of chart for any dots near the top
         .xAxisLabel("Years Of Service")
         .title(function(d) {
-            return d.key[2] + " earned " + d.key[1];
+            return d.key[2] + " earned " + d.key[1];                                    //This will appear when a dot is hovered, we use [1], because the salary is the second from the array
         })
-        .dimension(experienceDim)
-        .group(experienceSalaryGroup)
+        .dimension(experienceDim)                                                       //Contains both years of service and Salary
+        .group(experienceSalaryGroup)                                                   
         .margins({top: 10, right: 50, bottom: 75, left: 75});
 
 }
