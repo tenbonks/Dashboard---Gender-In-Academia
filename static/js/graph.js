@@ -195,9 +195,14 @@ function show_rank_distribution(ndx) {
 
 //  ----------------------------------------------------------------------------------SCATTER PLOT
 function show_service_to_salary_correlation(ndx) {
+    
+    var genderColors = d3.scale.ordinal()
+        .domain(["Female", "Male"])
+        .range(["pink", "blue"]);
+    
     var serviceFrameDim = ndx.dimension(dc.pluck("yrs_service"));                     //This will be used to work out the bounds of years of sevice
     var experienceDim = ndx.dimension(function(d) {
-        return [d.yrs_service, d.salary];                                             //The first parameter will plot along the x-axis, the second the y-axis
+        return [d.yrs_service, d.salary, d.rank ,d.sex];                              //The first parameter will plot along the x-axis, the second the y-axis, the 3rd is for use in the title, the 4th will be used to color correlating to genders
     });
     var experienceSalaryGroup = experienceDim.group();
 
@@ -215,6 +220,10 @@ function show_service_to_salary_correlation(ndx) {
         .title(function(d) {
             return d.key[2] + " earned " + d.key[1];                                    //This will appear when a dot is hovered, we use [1], because the salary is the second from the array
         })
+        .colorAccessor(function(d) {
+            return d.key[3];                                                            //Sex is the 4th from array so we use [3] to grab the sex value, then use genderColors below, which we defined earlier as "pink" for female, and "blue" for male
+        })
+        .colors(genderColors)
         .dimension(experienceDim)                                                       //Contains both years of service and Salary
         .group(experienceSalaryGroup)                                                   
         .margins({top: 10, right: 50, bottom: 75, left: 75});
