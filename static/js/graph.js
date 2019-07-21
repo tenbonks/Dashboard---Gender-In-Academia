@@ -7,16 +7,25 @@ function makeGraphs(error, salaryData) {
     
     salaryData.forEach(function(d){
         d.salary = parseInt(d.salary);
-    })
+        d.yrs_service = parseInt(d["yrs_service"])
+    });
     
     show_discipline_selector(ndx);
+    
+    show_percent_that_are_professors(ndx, "Female", "#percent-of-women-professors");
+    show_percent_that_are_professors(ndx, "Male", "#percent-of-men-professors");
+    
     show_gender_balance(ndx);
     show_average_salary(ndx);
     show_rank_distribution(ndx);
+
+    show_service_to_salary_correlation(ndx);
     
     dc.renderAll();
 }
 
+
+//  ----------------------------------------------------------------------------------DISCIPLINE SELECTOR
 function show_discipline_selector(ndx) {
     var dim = ndx.dimension(dc.pluck('discipline'));
     var group = dim.group();
@@ -25,6 +34,47 @@ function show_discipline_selector(ndx) {
         .dimension(dim)
         .group(group);
 }
+//  ----------------------------------------------------------------------------------/DISCIPLINE SELECTOR
+
+//  ----------------------------------------------------------------------------------PERCENTAGE DISPLAY
+function show_percent_that_are_professors(ndx, gender, element) {
+    var percentageThatAreProf = ndx.groupAll().reduce(
+        function(p, v) {
+            if (v.sex === gender) {
+                p.count++;
+                if(v.rank === "Prof") {
+                    p.are_prof++;
+                }
+            }
+            return p;
+        },
+        function(p, v) {
+            if (v.sex === gender) {
+                p.count--;
+                if(v.rank === "Prof") {
+                    p.are_prof--;
+                }
+            }
+            return p;
+        },
+        function() {
+            return {count: 0, are_prof: 0};    
+        },
+    );
+    
+    dc.numberDisplay(element)
+        .formatNumber(d3.format(".2%"))
+        .valueAccessor(function (d) {
+            if (d.count == 0) {
+                return 0;
+            } else {
+                return (d.are_prof / d.count);
+            }
+        })
+        .group(percentageThatAreProf)
+}
+//  ----------------------------------------------------------------------------------/PERCENTAGE DISPLAY
+
 
 
 function show_gender_balance(ndx) {
@@ -44,7 +94,7 @@ function show_gender_balance(ndx) {
         .yAxis().ticks(20);
 }
 
-
+//  ----------------------------------------------------------------------------------AVERAGES BAR CHART
 function show_average_salary(ndx) {
     var dim = ndx.dimension(dc.pluck('sex'));
     
@@ -89,8 +139,9 @@ function show_average_salary(ndx) {
         .xAxisLabel("Gender")
         .yAxis().ticks(4);
 }
+//  ----------------------------------------------------------------------------------/AVERAGES BAR CHART
 
-
+//  ----------------------------------------------------------------------------------DISTRIBUTED BAR CHART
 function show_rank_distribution(ndx) {
     
     function rankByGender(dimension, rank) {
@@ -139,3 +190,35 @@ function show_rank_distribution(ndx) {
         .legend(dc.legend().x(320).y(20).itemHeight(15).gap(5))
         .margins({top: 10, right: 100, bottom: 30, left: 30});
 }
+//  ----------------------------------------------------------------------------------/DISTRIBUTED BAR CHART
+
+
+//  ----------------------------------------------------------------------------------SCATTER PLOT
+function show_service_to_salary_correlation(ndx) {
+    var serviceFrameDim = ndx.dimension(dc.pluck("yrs_service"));                     //This will be used to work out the bounds of years of sevice
+    var experienceDim = ndx.dimension(function(d) {
+        return [d.yrs_service, d.salary];                                             //The first parameter will plot along the x-axis, the second the y-axis
+    });
+    var experienceSalaryGroup = experienceDim.group();
+
+    var minExperience = serviceFrameDim.bottom(1)[0].yrs_service;
+    var maxExperience = serviceFrameDim.top(1)[0].yrs_service;                         //This will use serviceFrameDim to get min and max years of service
+
+    dc.scatterPlot("#service-salary")
+        .width(800)
+        .height(400)
+        .x(d3.scale.linear().domain([minExperience, maxExperience]))                    //Note this is linear, not odinal as before
+        .brushOn(false)
+        .symbolSize(8)
+        .clipPadding(10)                                                                //Leaves room at the top of chart for any dots near the top
+        .xAxisLabel("Years Of Service")
+        .title(function(d) {
+            return d.key[2] + " earned " + d.key[1];
+        })
+        .dimension(experienceDim)
+        .group(experienceSalaryGroup)
+        .margins({top: 10, right: 50, bottom: 75, left: 75});
+
+}
+
+//  ----------------------------------------------------------------------------------/SCATTER PLOT
