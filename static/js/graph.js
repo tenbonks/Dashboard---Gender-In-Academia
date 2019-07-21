@@ -7,6 +7,7 @@ function makeGraphs(error, salaryData) {
     
     salaryData.forEach(function(d){
         d.salary = parseInt(d.salary);
+        d.yrs_since_phd = parseInt(d["yrs.since.phd"])
         d.yrs_service = parseInt(d["yrs.service"])
     });
     
@@ -20,6 +21,8 @@ function makeGraphs(error, salaryData) {
     show_rank_distribution(ndx);
 
     show_service_to_salary_correlation(ndx);
+
+    show_phd_to_salary_correlation(ndx);
     
     dc.renderAll();
 }
@@ -217,6 +220,7 @@ function show_service_to_salary_correlation(ndx) {
         .symbolSize(8)
         .clipPadding(10)                                                                //Leaves room at the top of chart for any dots near the top
         .xAxisLabel("Years Of Service")
+        .yAxisLabel("Salary")
         .title(function(d) {
             return d.key[2] + " earned " + d.key[1];                                    //This will appear when a dot is hovered, we use [1], because the salary is the second from the array
         })
@@ -231,3 +235,40 @@ function show_service_to_salary_correlation(ndx) {
 }
 
 //  ----------------------------------------------------------------------------------/SCATTER PLOT
+
+function show_phd_to_salary_correlation(ndx) {
+    
+    var genderColors = d3.scale.ordinal()
+        .domain(["Female", "Male"])
+        .range(["pink", "blue"]);
+    
+    var timeFrameDim = ndx.dimension(dc.pluck("yrs_since_phd"));                     //This will be used to work out the bounds of years since phd was acheived
+    var phdDim = ndx.dimension(function(d) {
+        return [d.yrs_since_phd, d.salary, d.rank ,d.sex];                              //The first parameter will plot along the x-axis, the second the y-axis, the 3rd is for use in the title, the 4th will be used to color correlating to genders
+    });
+    var phdSalaryGroup = phdDim.group();
+
+    var minPhd = timeFrameDim.bottom(1)[0].yrs_since_phd;
+    var maxPhd = timeFrameDim.top(1)[0].yrs_since_phd;                         //This will use serviceFrameDim to get min and max years of service
+
+    dc.scatterPlot("#phd-salary")
+        .width(800)
+        .height(400)
+        .x(d3.scale.linear().domain([minPhd, maxPhd]))                    //Note this is linear, not odinal as before
+        .brushOn(false)
+        .symbolSize(8)
+        .clipPadding(10)                                                                //Leaves room at the top of chart for any dots near the top
+        .xAxisLabel("Years Since Phd")
+        .yAxisLabel("Salary")
+        .title(function(d) {
+            return d.key[2] + " earned " + d.key[1];                                    //This will appear when a dot is hovered, we use [1], because the salary is the second from the array
+        })
+        .colorAccessor(function(d) {
+            return d.key[3];                                                            //Sex is the 4th from array so we use [3] to grab the sex value, then use genderColors below, which we defined earlier as "pink" for female, and "blue" for male
+        })
+        .colors(genderColors)
+        .dimension(phdDim)                                                       //Contains both years of service and Salary
+        .group(phdSalaryGroup)                                                   
+        .margins({top: 10, right: 50, bottom: 75, left: 75});
+
+}
